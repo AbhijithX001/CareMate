@@ -1,0 +1,358 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  pdftitle={CareMate Comprehensive Technical Project Report},
+  pdfauthor={CareMate Team}
+}
+
+\setstretch{1.15}
+\setlist[itemize]{leftmargin=1.5em}
+\setlist[enumerate]{leftmargin=1.7em}
+
+\title{\textbf{CareMate: Comprehensive Technical Project Report}\\\large(Current Working Model)}
+\author{CareMate Project Team}
+\date{Codebase Snapshot: March 30, 2026}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Project Snapshot}
+\begin{itemize}
+  \item \textbf{Project:} CareMate (assistive app for Alzheimer's care and memory support)
+  \item \textbf{Architecture style:} Client-server web application with AI-assisted processing and local persistence
+  \item \textbf{Primary runtime split:}
+  \begin{itemize}
+    \item Backend: Python + FastAPI + SQLite + ML/AI services
+    \item Frontend: React + Vite single-page application
+  \end{itemize}
+\end{itemize}
+
+This report is based on the currently implemented source code and active environment configuration in the project workspace.
+
+\section{Current Working AI Model Configuration}
+From the active backend environment (\texttt{CAREMATE/.env}), the configured AI setup is:
+\begin{itemize}
+  \item \texttt{CARE\_LLM\_PROVIDER=gemini}
+  \item \texttt{CARE\_LLM\_MODEL=gemini-2.5-flash-lite}
+  \item \texttt{CARE\_TRANSCRIBE\_PROVIDER=gemini}
+  \item \texttt{CARE\_TRANSCRIBE\_MODEL=gemini-2.5-flash-lite}
+\end{itemize}
+
+\textbf{Implications:}
+\begin{itemize}
+  \item Conversation transcription is attempted through Gemini first.
+  \item Summary and reminder extraction are attempted through Gemini first.
+  \item If AI transcription fails or is unavailable, backend falls back to local Whisper (\texttt{base}).
+  \item If AI summary extraction fails or is unavailable, backend falls back to local BART summarization plus heuristic reminder extraction.
+\end{itemize}
+
+\section{High-Level Technical Architecture}
+
+\subsection{Backend Layer (\texttt{CAREMATE/})}
+\textbf{Core files:}
+\begin{itemize}
+  \item \texttt{main.py} (832 lines): API routes, face pipeline, audio pipeline, reminders, diary CRUD
+  \item \texttt{llm.py} (230 lines): provider abstraction for Gemini/OpenAI-compatible endpoints
+  \item \texttt{database.py} (27 lines): SQLite schema creation
+  \item \texttt{init\_db.py}: database bootstrap script
+\end{itemize}
+
+\textbf{Core backend capabilities:}
+\begin{itemize}
+  \item Audio ingestion and conversion to WAV via FFmpeg
+  \item AI-first transcription and summarization flow with local fallback
+  \item Face registration, identification, and verification using DeepFace
+  \item Reminder extraction/storage and status lifecycle management
+  \item Diary entry persistence and retrieval
+\end{itemize}
+
+\subsection{Frontend Layer (\texttt{caremate\_front/})}
+\textbf{Core files:}
+\begin{itemize}
+  \item \texttt{src/App.jsx} (700 lines): end-to-end app flow in a single module
+  \item \texttt{src/main.jsx}: React root initialization
+  \item \texttt{src/App.css}, \texttt{src/index.css}: design system and layout styles
+\end{itemize}
+
+\textbf{Core frontend capabilities:}
+\begin{itemize}
+  \item Camera and microphone capture flow
+  \item Face recognition-assisted person identification
+  \item Conversation recording and backend processing trigger
+  \item Diary browsing and deletion
+  \item Face library management (add/delete/select/rename via API)
+  \item Reminder list management and completion toggle
+\end{itemize}
+
+\section{Backend Technology Stack}
+
+\subsection{Framework and Runtime}
+\begin{itemize}
+  \item FastAPI (\texttt{fastapi==0.129.0})
+  \item Uvicorn (\texttt{uvicorn==0.41.0})
+  \item CORS middleware enabled (currently wildcard \texttt{allow\_origins=["*"]})
+  \item Multipart upload handling via \texttt{python-multipart}
+\end{itemize}
+
+\subsection{AI and ML}
+\begin{itemize}
+  \item Local STT fallback: \texttt{openai-whisper} using model \texttt{base}
+  \item Local summarization fallback: \texttt{facebook/bart-large-cnn} via Transformers
+  \item Face recognition: DeepFace with ArcFace model and MTCNN detector backend
+  \item Cloud AI support:
+  \begin{itemize}
+    \item Gemini API (\texttt{generativelanguage.googleapis.com})
+    \item OpenAI-compatible providers via configurable base URL
+  \end{itemize}
+\end{itemize}
+
+\subsection{Data and Utilities}
+\begin{itemize}
+  \item SQLite for persistence (\texttt{caremate.db})
+  \item \texttt{python-dateutil} for due-date parsing
+  \item \texttt{requests} for provider API integration
+  \item FFmpeg subprocess for audio normalization (16kHz mono WAV)
+\end{itemize}
+
+\section{Frontend Technology Stack}
+\begin{itemize}
+  \item React 19
+  \item Vite 8
+  \item Axios for HTTP calls
+  \item Framer Motion for transitions and animated interaction states
+  \item Lucide React icon system
+  \item CSS variable-driven visual system
+\end{itemize}
+
+\textbf{Build and dev scripts:}
+\begin{itemize}
+  \item \texttt{npm run dev} --- Vite development server
+  \item \texttt{npm run build} --- production bundle
+  \item \texttt{npm run preview} --- built app preview
+\end{itemize}
+
+\section{Data Model (SQLite)}
+
+\subsection{\texttt{conversations}}
+\begin{itemize}
+  \item \texttt{id} INTEGER PRIMARY KEY AUTOINCREMENT
+  \item \texttt{person\_name} TEXT
+  \item \texttt{transcript} TEXT
+  \item \texttt{summary} TEXT
+  \item \texttt{created\_at} TIMESTAMP DEFAULT CURRENT\_TIMESTAMP
+\end{itemize}
+
+\subsection{\texttt{reminders}}
+\begin{itemize}
+  \item \texttt{id} INTEGER PRIMARY KEY AUTOINCREMENT
+  \item \texttt{title} TEXT NOT NULL
+  \item \texttt{due\_at} TIMESTAMP (nullable)
+  \item \texttt{status} TEXT NOT NULL DEFAULT \texttt{pending}
+  \item \texttt{conversation\_id} INTEGER (foreign key to \texttt{conversations.id})
+  \item \texttt{created\_at} TIMESTAMP DEFAULT CURRENT\_TIMESTAMP
+\end{itemize}
+
+\textbf{Lifecycle:} \texttt{init\_db.py} initializes schema via \texttt{database.create\_tables()}.
+
+\section{API Surface (Implemented)}
+
+\subsection{Audio and Diary APIs}
+\begin{longtable}{p{0.28\textwidth} p{0.67\textwidth}}
+\toprule
+\textbf{Endpoint} & \textbf{Purpose} \\
+\midrule
+\endhead
+\texttt{POST /process-audio} & Accepts audio + \texttt{person\_name}; converts audio; performs AI-first transcription and analysis with fallback; stores conversation; returns saved entry and \texttt{suggested\_reminders}. \\
+\texttt{GET /diary-entries} & Returns conversations ordered by newest first. \\
+\texttt{DELETE /diary-entries/\{entry\_id\}} & Deletes a diary entry by ID. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Reminder APIs}
+\begin{longtable}{p{0.28\textwidth} p{0.67\textwidth}}
+\toprule
+\textbf{Endpoint} & \textbf{Purpose} \\
+\midrule
+\endhead
+\texttt{GET /reminders} & Returns reminders ordered by newest first. \\
+\texttt{POST /reminders} & Creates reminder (title, optional due date, optional conversation reference). \\
+\texttt{PATCH /reminders/\{reminder\_id\}} & Updates reminder status in \texttt{\{pending, done\}}. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Face Library and Recognition APIs}
+\begin{longtable}{p{0.36\textwidth} p{0.59\textwidth}}
+\toprule
+\textbf{Endpoint} & \textbf{Purpose} \\
+\midrule
+\endhead
+\texttt{GET /faces} & Lists known face identities from \texttt{known/}. \\
+\texttt{GET /faces/\{person\_name\}/image} & Serves the stored face image. \\
+\texttt{PATCH /faces/\{person\_name\}} & Renames a face identity. \\
+\texttt{DELETE /faces/\{person\_name\}} & Deletes a face identity image. \\
+\texttt{PUT /faces/\{person\_name\}/photo} & Replaces face image for an identity. \\
+\texttt{POST /register-face/\{person\_name\}} & Registers an uploaded face image. \\
+\texttt{POST /verify-face/\{person\_name\}} & One-to-one verification against a known identity. \\
+\texttt{POST /identify-face} & One-to-many face identification against all known faces. \\
+\texttt{POST /webcam-verify} & Verifies base64 webcam frame against provided person name. \\
+\texttt{GET /webcam} & Serves a lightweight HTML webcam diagnostic page. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Contacts API}
+\begin{itemize}
+  \item \texttt{GET /contacts}: currently returns mocked contact data (not DB-backed).
+\end{itemize}
+
+\section{End-to-End Runtime Flows}
+
+\subsection{Memory Capture Flow}
+\begin{enumerate}
+  \item Frontend opens camera/microphone via browser media APIs.
+  \item Frontend captures still image and calls \texttt{/identify-face}.
+  \item If no verified match exists, frontend auto-registers unknown face with generated temporary name.
+  \item User records audio; frontend posts to \texttt{/process-audio}.
+  \item Backend runs audio conversion, transcription, summary/reminder extraction, and DB write.
+  \item Frontend displays generated summary and optional reminder suggestions.
+  \item Reminder is persisted only after explicit user confirmation (Add action).
+\end{enumerate}
+
+\subsection{Reminder Management Flow}
+\begin{enumerate}
+  \item Frontend loads reminders from \texttt{/reminders}.
+  \item Pending vs done groups are computed client-side.
+  \item Toggle action sends \texttt{PATCH /reminders/\{id\}} with updated status.
+\end{enumerate}
+
+\subsection{Diary Flow}
+\begin{enumerate}
+  \item Frontend loads entries from \texttt{/diary-entries}.
+  \item List and detail views are rendered client-side.
+  \item Delete action sends \texttt{DELETE /diary-entries/\{id\}}.
+\end{enumerate}
+
+\section{Current Implementation Characteristics}
+
+\subsection{Strengths}
+\begin{itemize}
+  \item AI-first with deterministic local fallback improves robustness.
+  \item Clear separation between suggested reminders and persisted reminders.
+  \item Face CRUD plus recognition APIs are fully connected to UI workflows.
+  \item Lightweight deployment path with SQLite and a single FastAPI service.
+\end{itemize}
+
+\subsection{Technical Debt and Risks}
+\begin{itemize}
+  \item \texttt{main.py} and \texttt{App.jsx} are monolithic and should be modularized.
+  \item CORS is fully open and not production hardened.
+  \item No authentication/authorization layer for API routes.
+  \item No automated backend/frontend test suite.
+  \item Stateful artifact \texttt{caremate.db} exists in source tree.
+  \item \texttt{/contacts} is mocked and not integrated with persistence.
+  \item Broad \texttt{except Exception} handling in multiple endpoints.
+  \item Heavy ML dependency footprint (TensorFlow + Torch + DeepFace).
+\end{itemize}
+
+\subsection{Performance Considerations}
+\begin{itemize}
+  \item Lazy model loading reduces startup cost but first request is still expensive.
+  \item Face identification is linear across registered faces.
+  \item Audio processing currently runs synchronously per request and writes temporary files locally.
+\end{itemize}
+
+\section{Security and Compliance Posture (Current State)}
+\begin{itemize}
+  \item Environment-based secrets are supported via \texttt{.env}.
+  \item SQL injection risk is reduced through parameterized SQLite queries.
+  \item Missing controls before production usage:
+  \begin{itemize}
+    \item Authentication and authorization
+    \item Rate limiting and abuse controls
+    \item Strict request/file size validation
+    \item Audit logging and retention policy enforcement
+    \item Explicit encryption-at-rest strategy beyond host defaults
+  \end{itemize}
+\end{itemize}
+
+Given healthcare-adjacent usage, privacy and compliance hardening is strongly recommended before broader deployment.
+
+\section{Deployment and Operations Notes}
+
+\subsection{Backend Startup}
+\begin{enumerate}
+  \item \texttt{cd CAREMATE}
+  \item Create and activate a virtual environment
+  \item \texttt{pip install -r requirements.txt}
+  \item \texttt{python init\_db.py}
+  \item \texttt{uvicorn main:app --reload}
+\end{enumerate}
+
+\subsection{Frontend Startup}
+\begin{enumerate}
+  \item \texttt{cd caremate\_front}
+  \item \texttt{npm install}
+  \item \texttt{npm run dev}
+\end{enumerate}
+
+\subsection{Runtime Configuration Knobs}
+\begin{itemize}
+  \item Frontend API base: \texttt{VITE\_API\_BASE\_URL}
+  \item AI provider/model config: \texttt{CARE\_LLM\_*}, \texttt{CARE\_TRANSCRIBE\_*}
+  \item External requirement: \texttt{ffmpeg} available on host PATH for \texttt{/process-audio}
+\end{itemize}
+
+\section{Suggested Technical Roadmap (Priority Order)}
+\begin{enumerate}
+  \item \textbf{Refactor monoliths:}
+  \begin{itemize}
+    \item Split backend by domain (audio, faces, reminders, diary)
+    \item Split frontend screens/components into independent modules
+  \end{itemize}
+  \item \textbf{Add test coverage:}
+  \begin{itemize}
+    \item Backend API tests (FastAPI TestClient)
+    \item Frontend component/integration tests
+  \end{itemize}
+  \item \textbf{Security hardening:}
+  \begin{itemize}
+    \item Token-based authentication
+    \item Restricted CORS origin policy
+    \item Input and file validation guardrails
+  \end{itemize}
+  \item \textbf{Reliability improvements:}
+  \begin{itemize}
+    \item Structured logging with request correlation IDs
+    \item Better exception taxonomy and clearer API error contracts
+  \end{itemize}
+  \item \textbf{Scalability improvements:}
+  \begin{itemize}
+    \item Background task queue for long-running audio/AI jobs
+    \item Caching/indexing strategy for face matching
+  \end{itemize}
+  \item \textbf{Data governance:}
+  \begin{itemize}
+    \item Retention policy, archival process, and encrypted backup path
+  \end{itemize}
+\end{enumerate}
+
+\section{Final Technical Summary}
+CareMate currently operates as a practical AI-enabled caregiving assistant with a functioning FastAPI backend and React frontend. The current runtime path is Gemini-first for both transcription and conversation understanding, with local fallback logic for resiliency. The project has strong MVP-level functional depth, especially in face-aware memory capture and reminder workflows, and is ready for focused work on modularization, testing, and production-grade security controls.
+
+\end{document}

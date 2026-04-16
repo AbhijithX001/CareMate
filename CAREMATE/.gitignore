@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+
+# Database
+*.db
+
+# Audio & temp files
+*.wav
+*.mp3
+*.m4a
+*.webm
+temp_upload/
+
+# Images
+*.jpg
+*.jpeg
+*.png
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env

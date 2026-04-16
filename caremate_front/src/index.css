@@ -1,0 +1,76 @@
+:root {
+  --bg-dark: #000000;
+  --bg-panel: rgba(20, 20, 20, 0.4);
+  --bg-glass: rgba(255, 255, 255, 0.02);
+  --bg-glass-hover: rgba(255, 255, 255, 0.05);
+  
+  --border: rgba(255, 255, 255, 0.05);
+  --border-highlight: rgba(255, 255, 255, 0.15);
+  --border-glow: rgba(138, 43, 226, 0.3); /* Purple tinted border */
+  
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  
+  --accent-purple: #818cf8; /* Soft indigo/purple */
+  --accent-blue: #38bdf8; /* Ocean blue */
+  --accent-pink: #f472b6; /* Hot pink */
+  
+  --danger: #ff4757;
+  --warning: #ffa502;
+  --success: #2ed573;
+  
+  --shadow-glow: 0 0 40px rgba(138, 43, 226, 0.15);
+  --shadow-bento: 0 10px 30px rgba(0, 0, 0, 0.5);
+  
+  --font-sans: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  
+  color-scheme: dark;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  overflow-y: hidden; /* App container handles internal scroll */
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6, p {
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+input {
+  font-family: inherit;
+  outline: none;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  display: none;
+}
+

@@ -1,0 +1,209 @@
+/* App.css - Aurora Bento Design System */
+
+.app-container {
+  font-family: var(--font-sans);
+  background-color: var(--bg-dark);
+  min-height: 100vh;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden; /* Hide overflow globally here, let inner content scroll */
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 60px rgba(255, 255, 255, 0.05);
+}
+
+/* ─── Aurora Background Effects ─── */
+.aurora-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.aurora-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.6;
+  mix-blend-mode: screen;
+  animation: floatOrb 12s infinite alternate ease-in-out;
+}
+
+.aurora-blob.purple {
+  width: 350px;
+  height: 350px;
+  background: rgba(129, 140, 248, 0.35); /* Indigo */
+  top: -100px;
+  left: -50px;
+}
+
+.aurora-blob.pink {
+  width: 250px;
+  height: 250px;
+  background: rgba(244, 114, 182, 0.25); /* Pink */
+  top: 20%;
+  right: -50px;
+  animation-delay: -3s;
+}
+
+.aurora-blob.blue {
+  width: 300px;
+  height: 300px;
+  background: rgba(56, 189, 248, 0.25); /* Blue */
+  bottom: 10%;
+  left: -80px;
+  animation-delay: -7s;
+}
+
+@keyframes floatOrb {
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(30px) scale(1.1); }
+  100% { transform: translateY(-30px) scale(0.9); }
+}
+
+/* ─── Scroll Container ─── */
+.scroll-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 120px; /* Space for bottom nav */
+  z-index: 1;
+  position: relative;
+}
+
+/* ─── Bento Grid Logic ─── */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 0 20px;
+}
+
+.bento-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-bento);
+  text-align: left;
+}
+
+/* Highlight border top edge to mimic lighting */
+.bento-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+}
+
+.bento-card.large {
+  grid-column: span 2;
+}
+
+.bento-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Capture Orb ─── */
+.capture-orb-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 40px auto;
+}
+
+.capture-orb-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.1);
+  animation: ripple 2s infinite linear;
+}
+
+@keyframes ripple {
+  0% { transform: scale(0.8); opacity: 1; border-width: 2px; }
+  100% { transform: scale(2.5); opacity: 0; border-width: 1px; }
+}
+
+/* ─── Form Inputs ─── */
+.aurora-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 14px 16px;
+  color: white;
+  font-size: 15px;
+  backdrop-filter: blur(12px);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.aurora-input:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+}
+
+/* ─── Bottom Nav ─── */
+.bottom-nav-glass {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 48px);
+  max-width: calc(600px - 48px);
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  display: flex;
+  justify-content: space-between;
+  padding: 6px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  z-index: 50;
+}
+
+.nav-item {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  color: var(--text-tertiary);
+  z-index: 1;
+  transition: color 0.3s;
+}
+
+.nav-item.active {
+  color: white;
+}
+
+.nav-indicator {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+
