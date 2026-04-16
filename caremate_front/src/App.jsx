@@ -592,6 +592,13 @@ function RemindersScreen({ reminders, refreshReminders }) {
       refreshReminders?.();
     } catch { }
   };
+  const deleteReminder = async (r) => {
+    try {
+      if (!window.confirm("Delete this completed reminder?")) return;
+      await axios.delete(`${API_BASE_URL}/reminders/${r.id}`);
+      refreshReminders?.();
+    } catch { }
+  };
   const pending = (reminders || []).filter(r => (r.status || "pending") === "pending");
   const done = (reminders || []).filter(r => (r.status || "pending") === "done");
 
@@ -627,6 +634,24 @@ function RemindersScreen({ reminders, refreshReminders }) {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 16, fontWeight: 500, color: "white", textDecoration: "line-through" }}>{r.title || r.text}</div>
                 </div>
+                <button
+                  onClick={() => deleteReminder(r)}
+                  title="Delete completed reminder"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    background: "rgba(255,71,87,0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "var(--danger)",
+                    border: "1px solid rgba(255,71,87,0.35)",
+                    marginRight: 8
+                  }}
+                >
+                  <Trash2 size={16} />
+                </button>
                 <button onClick={() => toggle(r)} style={{ width: 32, height: 32, borderRadius: 16, background: "var(--success)", display: "flex", alignItems: "center", justifyContent: "center", color: "black", border: "none" }}><Check size={16} strokeWidth={3} /></button>
               </div>
             ))}

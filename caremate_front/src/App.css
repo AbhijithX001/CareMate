@@ -3,7 +3,9 @@
 .app-container {
   font-family: var(--font-sans);
   background-color: var(--bg-dark);
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
@@ -67,8 +69,11 @@
 /* ─── Scroll Container ─── */
 .scroll-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   padding-bottom: 120px; /* Space for bottom nav */
   z-index: 1;
   position: relative;
@@ -205,5 +210,4 @@
   z-index: -1;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
-
 

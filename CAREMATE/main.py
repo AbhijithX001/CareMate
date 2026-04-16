@@ -561,6 +561,27 @@ async def update_reminder(reminder_id: int, request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.delete("/reminders/{reminder_id}")
+async def delete_reminder(reminder_id: int):
+    """
+    Delete a reminder by id.
+    """
+    try:
+        conn = sqlite3.connect("caremate.db")
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM reminders WHERE id = ?", (reminder_id,))
+        if cursor.rowcount == 0:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Reminder not found.")
+        conn.commit()
+        conn.close()
+        return {"message": "Reminder deleted.", "id": reminder_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/verify-face/{person_name}")
 async def verify_face_endpoint(person_name: str, file: UploadFile = File(...)):
     """

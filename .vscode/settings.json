@@ -1,0 +1,4 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/CAREMATE/venv/bin/python",
+  "python.terminal.activateEnvironment": true
+}
