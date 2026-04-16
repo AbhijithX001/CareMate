@@ -12,6 +12,7 @@ def create_tables():
     person_name TEXT,
     transcript TEXT,
     summary TEXT,
+    speaker_turns TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
 
     cursor.execute("""CREATE TABLE IF NOT EXISTS reminders (

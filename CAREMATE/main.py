@@ -10,6 +10,7 @@ import base64
 from datetime import datetime
 from datetime import timedelta
 import re
+import json
 from urllib.parse import quote
 from transformers import BartTokenizer, BartForConditionalGeneration
 from deepface import DeepFace
@@ -76,18 +77,78 @@ def convert_to_wav(input_path, output_path):
     subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
-def save_to_db(person_name, transcript, summary):
+def ensure_conversation_schema():
+    """
+    Backward-compatible schema migration for older local databases.
+    """
+    conn = sqlite3.connect("caremate.db")
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(conversations)")
+    cols = [row[1] for row in cursor.fetchall()]
+    if "speaker_turns" not in cols:
+        cursor.execute("ALTER TABLE conversations ADD COLUMN speaker_turns TEXT")
+        conn.commit()
+    conn.close()
+
+
+def build_speaker_turns(segments, person_name: str):
+    """
+    Heuristic speaker turn labeling.
+    This is not true diarization; it creates readable turns from Whisper segments.
+    """
+    if not segments:
+        return []
+
+    turns = []
+    prev_end = None
+    speaker_idx = 1
+
+    for seg in segments:
+        text = (seg.get("text") or "").strip()
+        if not text:
+            continue
+
+        start = float(seg.get("start", 0.0) or 0.0)
+        end = float(seg.get("end", start) or start)
+        gap = (start - prev_end) if prev_end is not None else 0.0
+
+        # Flip speaker after a noticeable pause to approximate turn-taking.
+        if prev_end is not None and gap >= 1.2:
+            speaker_idx = 2 if speaker_idx == 1 else 1
+
+        speaker = f"Speaker {speaker_idx}"
+        if speaker_idx == 1 and person_name and person_name.strip().lower() != "unknown":
+            speaker = f"{person_name} (Patient)"
+
+        if turns and turns[-1]["speaker"] == speaker and (start - turns[-1]["end_sec"]) < 1.2:
+            turns[-1]["text"] = f'{turns[-1]["text"]} {text}'.strip()
+            turns[-1]["end_sec"] = end
+        else:
+            turns.append({
+                "speaker": speaker,
+                "start_sec": round(start, 2),
+                "end_sec": round(end, 2),
+                "text": text,
+            })
+
+        prev_end = end
+
+    return turns
+
+
+def save_to_db(person_name, transcript, summary, speaker_turns=None):
+    ensure_conversation_schema()
     conn = sqlite3.connect("caremate.db")
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO conversations (person_name, transcript, summary) VALUES (?, ?, ?)",
-        (person_name, transcript, summary)
+        "INSERT INTO conversations (person_name, transcript, summary, speaker_turns) VALUES (?, ?, ?, ?)",
+        (person_name, transcript, summary, json.dumps(speaker_turns or []))
     )
     last_id = cursor.lastrowid
     
     # Fetch the newly created record to return it
     cursor.execute(
-        "SELECT id, person_name, transcript, summary, created_at FROM conversations WHERE id = ?", 
+        "SELECT id, person_name, transcript, summary, speaker_turns, created_at FROM conversations WHERE id = ?",
         (last_id,)
     )
     row = cursor.fetchone()
@@ -100,7 +161,8 @@ def save_to_db(person_name, transcript, summary):
         "person_name": row[1],
         "transcript": row[2],
         "summary": row[3],
-        "created_at": row[4]
+        "speaker_turns": json.loads(row[4]) if row[4] else [],
+        "created_at": row[5]
     }
 
 
@@ -281,12 +343,17 @@ async def process_audio(
         convert_to_wav(raw_path, wav_path)
 
         transcript = None
+        whisper_result = None
         try:
             transcript = transcribe_audio(wav_path)
         except Exception:
             transcript = None
         if not transcript:
-            transcript = get_whisper().transcribe(wav_path)["text"]
+            whisper_result = get_whisper().transcribe(wav_path)
+            transcript = whisper_result.get("text", "")
+        elif whisper_result is None:
+            # We still run local Whisper once to obtain segment timing for speaker turns.
+            whisper_result = get_whisper().transcribe(wav_path)
 
         # Prefer an external LLM (if configured) for better summaries + reminders.
         reminders = []
@@ -341,7 +408,8 @@ async def process_audio(
                 "due_at": reminder.get("due_at")
             })
 
-        entry = save_to_db(person_name, transcript, summary)
+        speaker_turns = build_speaker_turns((whisper_result or {}).get("segments") or [], person_name)
+        entry = save_to_db(person_name, transcript, summary, speaker_turns)
 
         os.remove(raw_path)
         os.remove(wav_path)
@@ -362,17 +430,23 @@ async def get_diary_entries():
     Fetch all conversations from the database, ordered by newest first.
     """
     try:
+        ensure_conversation_schema()
         conn = sqlite3.connect("caremate.db")
         conn.row_factory = sqlite3.Row  # To return dict-like objects
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, person_name, transcript, summary, created_at FROM conversations ORDER BY created_at DESC"
+            "SELECT id, person_name, transcript, summary, speaker_turns, created_at FROM conversations ORDER BY created_at DESC"
         )
         rows = cursor.fetchall()
         
         entries = []
         for row in rows:
-            entries.append(dict(row))
+            item = dict(row)
+            try:
+                item["speaker_turns"] = json.loads(item.get("speaker_turns") or "[]")
+            except Exception:
+                item["speaker_turns"] = []
+            entries.append(item)
             
         conn.close()
         return {"entries": entries}
@@ -491,7 +565,19 @@ async def get_reminders():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, title, due_at, status, conversation_id, created_at FROM reminders ORDER BY created_at DESC"
+            """
+            SELECT
+                r.id,
+                r.title,
+                r.due_at,
+                r.status,
+                r.conversation_id,
+                r.created_at,
+                c.person_name
+            FROM reminders r
+            LEFT JOIN conversations c ON c.id = r.conversation_id
+            ORDER BY r.created_at DESC
+            """
         )
         rows = cursor.fetchall()
         conn.close()

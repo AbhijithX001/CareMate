@@ -615,6 +615,7 @@ function RemindersScreen({ reminders, refreshReminders }) {
                 <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,165,2,0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--warning)" }}><Bell size={20} /></div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 16, fontWeight: 600, color: "white" }}>{r.title || r.text}</div>
+                  {r.person_name && <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>With: {r.person_name}</div>}
                   {r.due_at && <div style={{ fontSize: 13, color: "var(--warning)", marginTop: 4 }}>{new Date(r.due_at).toLocaleString()}</div>}
                 </div>
                 <button onClick={() => toggle(r)} style={{ width: 32, height: 32, borderRadius: 16, border: "2px solid var(--accent-purple)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center" }} />
@@ -633,6 +634,7 @@ function RemindersScreen({ reminders, refreshReminders }) {
                 <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><Check size={20} /></div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 16, fontWeight: 500, color: "white", textDecoration: "line-through" }}>{r.title || r.text}</div>
+                  {r.person_name && <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>With: {r.person_name}</div>}
                 </div>
                 <button
                   onClick={() => deleteReminder(r)}
